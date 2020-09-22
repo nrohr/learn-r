@@ -1,0 +1,270 @@
+---
+title: "Data Visualization"
+output: html_notebook
+---
+
+This week we'll cover a few packages for visualizing our data:
+
+* [`ggplot2`](https://ggplot2.tidyverse.org/), our main package for static data visualization with the tidyverse
+* [`timetk`](https://business-science.github.io/timetk/index.html), a package built by Matt Dancho for working with time series data
+* [`plotly`](https://github.com/ropensci/plotly), an interactive visualization builder that also integrates nicely with ggplot.
+
+```{r setup, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(timetk)
+library(plotly)
+library(readxl)
+library(janitor)
+library(lubridate)
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, comment = NA)
+```
+
+
+Let's load our HPI dataset, wrangle it, and pivot it into long format.
+
+```{r}
+hpi <- read_excel("HPI_PO_monthly_hist.xls", skip = 3)
+
+hpi_wrangled <- hpi %>% 
+  clean_names() %>% 
+  slice(-1) %>%   # remove empty row
+  rename(date = month) %>%
+  select(date, ends_with("_sa")) %>%  # only keep seasonally adj. data
+  # separate() from tidyr package to split date into separate columns for day/month/year 
+  separate(date, into = c("year", "month", "day"), sep = '-', convert = TRUE, remove = FALSE) %>% 
+  # unite() from tidyr to join columns 
+  unite(yr_mon, year, month, sep = "/", remove = FALSE) %>% 
+  mutate_if(is.numeric, round, digits = 2) %>%  # round all numeric columns to 2 digits
+  # add labels with case_when()
+  mutate(season = case_when(between(month, 3, 5) ~ "spring",
+                            between(month, 6, 8) ~ "summer",
+                            between(month, 9, 11) ~ "fall",
+                            # between(month, 12, 2) ~ "winter" == won't work because there's no numbers between 12 and 2
+                            TRUE ~ "winter")) %>% 
+  select(date, yr_mon, year, month, day, season, everything()) %>%  # reorder columns
+  # arrange() from dplyr to sort rows
+  arrange(date)
+
+hpi_tidy <- 
+  hpi_wrangled %>% 
+  select(date, contains("north"), contains("south")) %>% 
+  # pivot_longer makes data long, or tidy
+  pivot_longer(-date, names_to = "division", values_to = "hpi") %>% 
+  group_by(division) 
+
+hpi_tidy
+```
+
+# `ggplot2`
+
+And now let's create a basic `ggplot`.
+
+```{r}
+hpi_tidy %>% 
+ggplot(aes(x = date, y = hpi, color = division)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Date", y = "House Price Index")
+```
+
+The `ggplot2` package uses some unique syntax (the "grammar of graphics") that allows us to create highly customizable static graphics. This grammar can be a bit hard to grasp, so don't worry if it takes a while to "click".
+
+I think about ggplot like this:
+
+* We always start by calling `ggplot()` to create our plot object. This is (usually!) where we will specify our data and *aesthetic mappings*, or how our variables should map onto features of the plot like axes, colored groupings, etc.
+* Then we add *geoms* to our plot. This is the step that will actually display our data on the graph. We will always have at least one of these, and sometimes multiple.
+* Finally, we can change the appearance of our plot by adding things like *themes* and changing titles and captions.
+
+Let's dissect the code above to understand each step.
+
+Wait, why a `+` instead of `%>%`? You can think of ggplots in layers. At each step, we're adding a new layer, like we're painting on a canvas. This is different than the pipe, which is for passing an object along to a new function.
+
+
+## Faceting
+
+Another thing we can "add" to our ggplots is a faceting layer. Facets divide a plot into subplots based on one of our variables. For example:
+
+```{r}
+ggplot(hpi_tidy, aes(x = date, y = hpi, color = division)) +
+  geom_line() +
+  facet_wrap(~division)
+```
+
+
+
+## Scatterplot
+
+There are many kinds of geoms we can add. For example, a scatterplot uses `geom_point()`.
+
+```{r}
+hpi_pct <- 
+  hpi_tidy %>% 
+  mutate(pct_change = (hpi / lag(hpi)) - 1,
+         pct_change_12_mons = (hpi / lag(hpi, 12)) - 1) %>%
+  na.omit()
+
+hpi_pct %>% 
+ggplot(aes(x = pct_change_12_mons, y = pct_change, color = division)) +
+  geom_point(alpha = .1) + #alpha = .5
+  facet_wrap(~division, ncol = 4) +
+  labs(x = "% change (1 yr.)", y = "% change (1 mo.)") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5))
+```
+
+
+## Scatterplot with trend line
+
+We can also add multiple geoms to a `ggplot` object, e.g. adding a trend line to our scatterplots:
+
+```{r}
+hpi_pct %>% 
+ggplot(aes(x = pct_change_12_mons, y = pct_change, color = division)) +
+  geom_point() + #alpha = .5
+  geom_smooth(method = "lm", se = TRUE, color = "purple") +
+  facet_wrap(~division, ncol = 4) +
+  labs(x = "% change (1 mo.)", y = "% change (1 yr.)") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5))
+```
+
+
+
+## Histogram
+
+There are lots of ways to customize the look and feel of your plots:
+
+```{r}
+hpi_pct %>% 
+  ggplot(aes(x = pct_change)) +
+  geom_histogram(fill = "darkblue", color = "darkred", bins = 10) +
+  facet_wrap(~division) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  theme_minimal()
+```
+
+
+## Density
+
+```{r}
+hpi_pct %>% 
+  ggplot(aes(x = pct_change)) +
+  geom_density(fill = "darkblue", color = "darkred", bins = 50) +
+  facet_wrap(~division) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  theme_minimal()
+```
+
+
+## Histogram and Density
+
+```{r}
+hpi_pct %>% 
+  ggplot(aes(x = pct_change)) +
+  geom_histogram(fill = "darkblue", color = "darkred", bins = 20) +
+  geom_density(color = "red") +
+  facet_wrap(~division) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+
+## Shading for recession
+
+We can even combine datasets on the same plot. Let's create a geom to shade the background of a plot during recession periods.
+
+```{r}
+# First, create our recessions tibble with tribble()
+recessions <- 
+tribble(
+  ~Peak, ~Trough,
+  "1948-11-01", "1949-10-01",
+  "1953-07-01", "1954-05-01",
+  "1957-08-01", "1958-04-01",
+  "1960-04-01", "1961-02-01",
+  "1969-12-01", "1970-11-01",
+  "1973-11-01", "1975-03-01",
+  "1980-01-01", "1980-07-01",
+  "1981-07-01", "1982-11-01",
+  "1990-07-01", "1991-03-01",
+  "2001-03-01", "2001-11-01",
+  "2007-12-01", "2009-06-01",
+  "2020-02-01", "2020-05-01"
+  ) %>% 
+  mutate(Peak = ymd(Peak),
+         Trough = ymd(Trough))
+
+
+recession_shade <- 
+  geom_rect(data = recessions, 
+            inherit.aes = F, 
+            aes(xmin = Peak, 
+                xmax = Trough, 
+                ymin = -Inf, 
+                ymax = +Inf), 
+            fill = 'pink', 
+            alpha = 0.5)
+
+
+hpi_pct %>% 
+  ggplot(aes(x = ymd(date), y = pct_change, color = division)) +
+  recession_shade +
+  geom_line() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust=0)) +
+  ylab("") +
+  xlab("Percent change, monthly") +
+  ggtitle("Housing Price Appreciation", 
+          subtitle = "by US Census Division") +
+  labs(caption = "data source: FHFA") +
+  scale_x_date(limits = c(as.Date(min(hpi_pct$date)), as.Date(max(hpi_pct$date)))) 
+```
+
+
+# `timetk` for time series data
+
+The [`timetk`](https://business-science.github.io/timetk/index.html) package includes a bunch of functions that make working with time series data super easy. This includes functions for easily creating great looking plots of time series data:
+
+```{r}
+hpi_pct %>% 
+  ungroup() %>% 
+  plot_time_series(date, pct_change, .color_var = division, .smooth = FALSE, .interactive = FALSE)
+```
+
+
+## Anomaly diagnostics with `timetk`
+
+`timetk` also includes functions for automatic anomaly detection:
+
+```{r}
+hpi_pct %>% 
+  filter(division == "south_atlantic_sa") %>% 
+  ungroup() %>% 
+  plot_anomaly_diagnostics(date, pct_change, .alpha = .03)
+```
+
+
+# Plotly and `ggplotly()`
+
+`timetk`'s interactive plots rely on [plotly](https://plotly.com/r/), a library for building interactive JavaScript visualizations. Plotly is supported in several different languages (including R) and has its own syntax.
+
+Importantly, the `plotly` R package includes a function called `ggplotly()` that (you guessed it!) turns ggplots into plotly charts.
+
+```{r}
+hpi_plot <- ggplot(hpi_tidy, aes(x = date, y = hpi, color = division)) +
+  geom_line()
+
+hpi_plot %>% 
+  ggplotly()
+```
+
+
+
+
+
+
