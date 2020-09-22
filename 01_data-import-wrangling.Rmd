@@ -37,7 +37,7 @@ To install a package on your computer, run `install.packages("name of package")`
 The file we are looking at and using today is called an `R Markdown` file. It's a file format that let's us interweave code chunks that look like this: I can write whatever. 
 
 ```{r}
-mtcars
+
 ```
 
 Along with plain text prose, which is what we are reading right now. We can then `knit` this to a PDF, an HTML file or a Notebook. We could have used an R script, which would have the file extension `.R`. Click `file` -> `New File` -> `R Script` to open an R script. Click `file` -> `New File` -> `R Notebook` to open an Rmarkdown Notebook.

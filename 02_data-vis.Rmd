@@ -61,11 +61,8 @@ hpi_tidy
 And now let's create a basic `ggplot`.
 
 ```{r}
-hpi_tidy %>% 
-ggplot(aes(x = date, y = hpi, color = division)) +
-  geom_line() +
-  theme_minimal() +
-  labs(x = "Date", y = "House Price Index")
+ggplot(hpi_tidy, aes(x = date, y = hpi, color = division)) +
+  geom_line()
 ```
 
 The `ggplot2` package uses some unique syntax (the "grammar of graphics") that allows us to create highly customizable static graphics. This grammar can be a bit hard to grasp, so don't worry if it takes a while to "click".
