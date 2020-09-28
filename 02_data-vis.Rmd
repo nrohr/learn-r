@@ -137,7 +137,7 @@ There are lots of ways to customize the look and feel of your plots:
 ```{r}
 hpi_pct %>% 
   ggplot(aes(x = pct_change)) +
-  geom_histogram(fill = "darkblue", color = "darkred", bins = 10) +
+  geom_histogram(fill = "darkblue", color = "darkred", bins = 50) +
   facet_wrap(~division) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   theme_minimal()
@@ -242,7 +242,7 @@ hpi_pct %>%
 hpi_pct %>% 
   filter(division == "south_atlantic_sa") %>% 
   ungroup() %>% 
-  plot_anomaly_diagnostics(date, pct_change, .alpha = .03)
+  plot_anomaly_diagnostics(date, pct_change, .alpha = .05)
 ```
 
 
