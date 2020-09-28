@@ -53,11 +53,11 @@ If you are using R for the first time on this computer, you'll need to install a
 ```{r setup, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, comment = NA)
 
-# install.packages(dplyr) 
-# install.packages(tidyr)
-# install.packages(readr)
-# install.packages(readxl)
-# install.packages(janitor)
+# install.packages("dplyr") 
+# install.packages("tidyr")
+# install.packages("readr")
+# install.packages("readxl")
+# install.packages("janitor")
 
 library(dplyr) 
 library(tidyr)
