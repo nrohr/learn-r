@@ -103,7 +103,7 @@ hpi_pct <-
 
 hpi_pct %>% 
 ggplot(aes(x = pct_change_12_mons, y = pct_change, color = division)) +
-  geom_point(alpha = .1) + #alpha = .5
+  geom_point() + #alpha = .5
   facet_wrap(~division, ncol = 4) +
   labs(x = "% change (1 yr.)", y = "% change (1 mo.)") +
   theme(legend.position = "none",
