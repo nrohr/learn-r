@@ -1,7 +1,7 @@
 ---
 title: "R Markdown - PDF & Word Output"
 author: "Nick Rohrbaugh"
-date: "9/15/2020"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   word_document: default
   pdf_document: default
