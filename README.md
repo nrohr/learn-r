@@ -2,7 +2,7 @@
 
 This repository contains materials for learning how to use R and RStudio for data science.
 
-To use this code in RStudio, first click the green "Code" button in the upper left of this page, then copy the URL. Then in RStudio, create a New Project > Version Control > Git and enter the URL to download the materials into a new project.
+To use this code in RStudio, first click the green "Code" button near the top of of this page, then copy the URL. Then in RStudio, create a New Project > Version Control > Git and enter the URL to download the materials into a new project.
 
 The content is organized into four sections, which are numbered in filenames:
 
