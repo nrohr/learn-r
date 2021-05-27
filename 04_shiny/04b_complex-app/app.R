@@ -8,7 +8,7 @@
 #
 
 library(shiny)
-library(shinythemes)
+library(bslib)
 library(tidyverse)
 library(timetk)
 library(plotly)
@@ -33,7 +33,7 @@ hpi_tidy <-
     group_by(division)
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(theme = shinytheme("cyborg"),
+ui <- fluidPage(theme = bs_theme(bootswatch = "cyborg"),
     
     # Application title
     titlePanel("FHFA House Price Index"),
